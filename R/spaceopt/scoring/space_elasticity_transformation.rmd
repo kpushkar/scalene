@@ -1,0 +1,112 @@
+---
+title: "Space Elasticity Transformation"
+output: html_notebook
+---
+
+This script will provide utility functions to transform space elasticity curve
+These transformations will enable to adjust the curve for store specific parameters
+
+There are four types of transformations:
+* Additive - Add given list of values to each point in the space elasticity curve
+* Multiplicative - Multiply given list of values to each point in the space elasticity curve
+* Exponential - Multiply exponential value of given list to each point in the space elasticity curve
+* Logarithmic - Multiply logarithmic value of given list to each point in the space elasticity curve
+
+#####
+
+Loading base dataset to see how will transformation look like
+```{r setup}
+knitr::opts_chunk$set(root.dir="/home/pushkar/scalene")
+library("reshape2")
+```
+
+```{r}
+getwd()
+# knitr::opts_chunk$set(root.dir="/home/pushkar/scalene")
+# knitr::opts_knit$set(root.dir="/home/pushkar/scalene")
+setwd("/home/pushkar/scalene")
+getwd()
+print(knitr::opts_chunk$get("root.dir"))
+source("R/utils/scalene_utilities.R")
+source("conf/spaceopt_config.R")
+source("R/spaceopt/scoring/space_elasticity_transformation.R")
+library("ggplot2")
+SPACE_ELASTICITY_PARAMS_DB <- read.csv("data/spaceopt/output/Space_Elasticity_Params_DB.csv",
+                                       stringsAsFactors = F)
+```
+
+Lets take a specific product and illustrate the transformation functions
+```{r}
+i = 50
+space_params <- c(SPACE_ELASTICITY_PARAMS_DB$ALPHA[i],
+                  SPACE_ELASTICITY_PARAMS_DB$BETA[i],
+                  SPACE_ELASTICITY_PARAMS_DB$GAMMA[i],
+                  SPACE_ELASTICITY_PARAMS_DB$DELTA[i])
+rm(SPACE_ELASTICITY_PARAMS_DB)
+curve_data <- data.frame(SPACE=seq(1,25))
+curve_data$BASE_KPI <- space_elasticity_values(space_params,curve_data$SPACE)
+# curve_data now has the space and corresponding cumulative KPI
+head(curve_data)
+```
+
+The base elasticity curve looks as follows:
+```{r}
+p <- ggplot(data = curve_data) + geom_line(aes(x=SPACE,y=BASE_KPI)) + ggtitle("Base Space Elasticity Curve") + expand_limits(x = 0,y=0) + scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + ylab("Cumulative KPI")
+p
+```
+
+And now we will see how the base curve can be transformed.
+
+# Additive Transformation
+We want to add a value to each of the points of base elasticity curve
+If the elasticity curve is to be shifted upwards, then we will add a positive value.
+A negative value will bring down the elasticity curve.
+
+Note that if we add a constant value to all the points of elasticity curve, then the marginal elasticity curve will not change (except for the first unit of space)
+
+We will now see how the curve shifts when we add values to the base curve.
+```{r}
+mod_values <- seq(from = 10000, to = 1000, length.out = length(curve_data$BASE_KPI))
+p <- ggplot() + geom_line(aes(x=curve_data$SPACE,y=mod_values)) + ggtitle("Modifying values") + expand_limits(x=0,y=0) + ylab("Mod values") + xlab("SPACE")
+p
+
+```
+
+And the transformed space elasticity curve looks like:
+```{r}
+curve_data$ADD_KPI <- elasticity_transformation(curve_values = curve_data$BASE_KPI,
+                                                modifying_values = mod_values,
+                                                transformType = "ADD")
+curve_data.m <- melt(data = curve_data,
+                     id.vars = c("SPACE"),
+                     value.name = "VALUE",
+                     variable.name = "TYPE")
+
+p <- ggplot(curve_data.m, aes(x=SPACE,y=VALUE,colour=TYPE)) + geom_line() + scale_color_brewer(palette = COLOR_PALETTE) + ggtitle("Additive Transformation") + theme_dark()
+p
+```
+**UPDATE: transformation function now returns an increasing function**
+
+~~We see the error in above graph. We need to ensure that the KPI is an increasing function with Space.~~
+
+# Multiplicative transformation
+```{r}
+mod_values <- seq(from=2, to=1, length.out = length(curve_data$SPACE))
+p <- ggplot() + geom_line(aes(x=curve_data$SPACE,y=mod_values)) + ggtitle("Modifying values") + xlab("SPACE") + ylab("Modifying values") + expand_limits(x=0,y=0) + scale_color_brewer(palette = COLOR_PALETTE) + theme_grey()
+p
+```
+And the transformed space elasticity curves look like this:
+
+```{r}
+curve_data$MUL_KPI <- elasticity_transformation(curve_values = curve_data$BASE_KPI,
+                                                modifying_values = seq(from=2,to=1,length.out = length(curve_data$SPACE)),
+                                                transformType = "MUL")
+curve_data.m <- melt(data = curve_data,
+                     id.vars = c("SPACE"),
+                     value.name = "VALUE",
+                     variable.name = "TYPE")
+
+p <- ggplot(curve_data.m, aes(x=SPACE,y=VALUE,colour=TYPE)) + geom_line() + scale_color_brewer(palette = COLOR_PALETTE) + ggtitle("Multiplicative Transformation") + theme_grey()
+p
+```
+

@@ -23,7 +23,10 @@ space_elasticity_values <- function (elasticity_params, space_values)
   x <- sapply(space_values, space_curve_value, elasticity_params = elasticity_params)
   # for some reason, x is list with name ALPHA
   # creating a matrix
-  x <- matrix(x,ncol = 1,dimnames = list(space_values))
+
+  # 15 Jan - dont remember why we returning matrix
+  # removing it for now
+  # x <- matrix(x,ncol = 1,dimnames = list(space_values))
   x
 }
 
@@ -44,3 +47,4 @@ space_curve_value <- function(space, elasticity_params)
 
   alpha + (beta - alpha)*exp(-exp(gamma*(space-delta)))
 }
+
