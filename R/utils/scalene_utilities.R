@@ -48,3 +48,8 @@ space_curve_value <- function(space, elasticity_params)
   alpha + (beta - alpha)*exp(-exp(gamma*(space-delta)))
 }
 
+# new function for space curve value
+space_curve_value2 <- function(space, alpha, beta, gamma, delta)
+{
+  alpha + (beta - alpha)*exp(-exp(gamma*(space-delta)))
+}
